@@ -42,6 +42,7 @@ class _MyHomePageState extends State<MyHomePage> {
         
         height: MediaQuery.of(context).size.height,
         decoration: const BoxDecoration(
+          
            image: DecorationImage(
             
             fit: BoxFit.cover,
