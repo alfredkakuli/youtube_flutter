@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:full_screen_app/auth/login.dart';
 import 'package:full_screen_app/state/provider_export.dart';
 import 'package:full_screen_app/state/ui/ui_provider.dart';
 import 'package:full_screen_app/theme/color_scheme.dart';
@@ -41,7 +42,8 @@ class MyApp extends StatelessWidget {
             theme: ThemeData(useMaterial3: true, colorScheme: lightColorScheme),
             darkTheme: ThemeData(useMaterial3: true, colorScheme: darkColorScheme),
             themeMode: baseUiProvider.getThemeMode ? ThemeMode.dark : ThemeMode.light,
-            home: const MyHomePage(),
+            // home: const MyHomePage(),
+            home: const LoginScreen(),
           );
         }));
   }

@@ -9,7 +9,6 @@ final lightModeSecondarybg = colorFromHex("#F8F8F8");
 final lightModeDivider = Colors.grey.withOpacity(0.15);
 final allPrimary = colorFromHex("#2E8BC0");
 
-
 const lightColorScheme = ColorScheme(
   brightness: Brightness.light,
   primary: Color(0xFF006D38),
@@ -77,4 +76,22 @@ const darkColorScheme = ColorScheme(
 Color colorFromHex(String hexColor) {
   final hexCode = hexColor.replaceAll('#', '');
   return Color(int.parse('FF$hexCode', radix: 16));
+}
+
+Widget smallSpacer() {
+  return const SizedBox(
+    height: 10.0,
+  );
+}
+
+Widget smallHorinzontalSpacer() {
+  return const SizedBox(
+    width: 10.0,
+  );
+}
+
+Widget largeSpacer() {
+  return const SizedBox(
+    height: 50.0,
+  );
 }
