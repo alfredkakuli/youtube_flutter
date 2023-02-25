@@ -6,8 +6,9 @@ import 'package:full_screen_app/auth/login.dart';
 import 'package:full_screen_app/state/provider_export.dart';
 import 'package:full_screen_app/state/ui/ui_provider.dart';
 import 'package:full_screen_app/theme/color_scheme.dart';
+import 'package:full_screen_app/views/pages/home.dart';
 import 'package:provider/provider.dart';
-import 'views/pages/home.dart';
+import 'auth/register.dart';
 
 void main() {
   runApp(const MyApp());
@@ -43,7 +44,8 @@ class MyApp extends StatelessWidget {
             darkTheme: ThemeData(useMaterial3: true, colorScheme: darkColorScheme),
             themeMode: baseUiProvider.getThemeMode ? ThemeMode.dark : ThemeMode.light,
             // home: const MyHomePage(),
-            home: const LoginScreen(),
+            // home: const LoginScreen(),
+            home: const RegisterScreen(),
           );
         }));
   }

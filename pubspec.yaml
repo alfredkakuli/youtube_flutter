@@ -41,6 +41,12 @@ dependencies:
   flash: ^2.0.5+1
   google_fonts: ^4.0.3
   flutter_tabler_icons: ^1.1.2
+  file_picker: ^5.2.5
+  image_picker: ^0.8.6+3
+  phone_form_field: ^7.0.6
+  form_validator: ^2.1.1
+  shared_preferences: ^2.0.18
+  dio: ^5.0.1
 
 dev_dependencies:
   flutter_test:
