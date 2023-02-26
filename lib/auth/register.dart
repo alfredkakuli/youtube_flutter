@@ -117,8 +117,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         "user_type": 3,
         "email": _emailProperty,
         "password_confirmation": _confirmPasswordController.text,
-        "users_phone": _phoneProperty,
-        "users_image_url": _profileImageFile != null ? await MultipartFile.fromFile(imagePath.path, filename: imagePath.path.toString()) : 'test.png',
+        "phone": _phoneProperty,
+        "profile_image_url": _profileImageFile != null ? await MultipartFile.fromFile(imagePath.path, filename: imagePath.path.toString()) : 'test.png',
       });
       var response = await Dio().post(
         '${SharedProperties.baseUrl}register_user',
@@ -135,6 +135,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
       );
       final decodedResponse = response.data;
+
+      print(decodedResponse);
+
       if (decodedResponse['exception'] != null) {
         setState(() => {_errorMessage = " Server error occured try again later!", _registerLoadingState = false});
         return;
@@ -143,10 +146,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (decodedResponse['status'] == true) {
         setState(() => {_registerLoadingState = false});
         _showDefultMessage('Registered successfull');
+
+        Navigator.push(context, SlideLeft(page: const LoginScreen()));
+        // navigator(context, '/login_page');
         _storeUserInfo(decodedResponse);
-        navigator(context, '/login');
       } else {
-        setState(() => {_registerLoadingState = false, _errorMessage = decodedResponse['message']['errors']});
+        setState(() => {_registerLoadingState = false, _errorMessage = decodedResponse['message']['errors'][0].toString()});
       }
     } on DioError catch (e) {
       if (e.type == DioErrorType.badResponse) {
@@ -582,8 +587,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.background.withOpacity(0.030), spreadRadius: 1.0, blurRadius: 1, offset: const Offset(1, 1))],
       ),
       child: TextFormField(
-          // controller: _confirmPasswordController,
-          initialValue: _passwordProperty,
+          controller: _confirmPasswordController,
           validator: (val) => val != _passwordController.text ? 'Must match Password' : null,
           obscureText: _toggleObsecureText,
           decoration: InputDecoration(

@@ -5,9 +5,11 @@ import 'package:flash/flash.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
 import 'package:full_screen_app/auth/register.dart';
+import 'package:full_screen_app/views/pages/home.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../navigation/router.dart';
 import '../navigation/slide.dart';
 import '../state/ui/ui_provider.dart';
@@ -64,6 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
       var formDataa = {
         "password": _passwordProperty,
         "email": _emailProperty,
+        "use_auth_token": true,
       };
       setState(() => {_loginLoadingState = true});
       var response = await Dio().post(
@@ -75,32 +78,23 @@ class _LoginScreenState extends State<LoginScreen> {
           validateStatus: (status) {
             return status! < 600;
           },
-          headers: {
-            HttpHeaders.acceptHeader: "application/json",
-          },
+          headers: {HttpHeaders.acceptHeader: "application/json", HttpHeaders.contentTypeHeader: "application/json"},
         ),
       );
 
       final decodedResponse = response.data;
-      if (decodedResponse['exception'] != null) {
-        setState(() => {_errorMessage = "Server error occured try again later!", _loginLoadingState = false});
-        return;
-      }
 
-      final checK = json.decode(decodedResponse['data']);
-
-      if (checK['error'] == 'invalid_grant') {
-        setState(() => {_errorMessage = "Invalid Login Credetials", _loginLoadingState = false});
-        return;
-      }
+      // debugPrint(decodedResponse['data']['user'].toString(), wrapWidth: 1024);
 
       if (decodedResponse['status'] == true) {
         setState(() => {_loginLoadingState = true});
-        _showDefultMessage('Loged In successfully');
-        authProvider.setAuthenticatedUser(decodedResponse);
-        navigator(context, '/home');
+        _showDefultMessage(decodedResponse['message']);
+
+        _storeUserInfo(decodedResponse);
+
+        Navigator.push(context, SlideLeft(page: const MyHomePage()));
       } else {
-        setState(() => {_errorMessage = decodedResponse['message']['errors'], _loginLoadingState = false});
+        setState(() => {_errorMessage = decodedResponse['message']['errors']['message'], _loginLoadingState = false});
       }
     } on DioError catch (e) {
       if (e.type == DioErrorType.badResponse) {
@@ -122,6 +116,22 @@ class _LoginScreenState extends State<LoginScreen> {
       }
       return;
     }
+  }
+
+  void _storeUserInfo(decodedResposnse) async {
+    final accessToken = decodedResposnse['data']['access_token'].toString();
+    final refreshToken = decodedResposnse['data']['refresh_token'].toString();
+    final userId = decodedResposnse['data']['user']['id'].toString();
+    final expiryTime = DateTime.now().add(Duration(minutes: int.parse(decodedResposnse['data']['expires_in'].toString())));
+    final userInfo = await SharedPreferences.getInstance();
+    Map<String, dynamic> user = decodedResposnse['data']['user'];
+    user.putIfAbsent('access_token', () => accessToken);
+    user.putIfAbsent('refresh_token', () => refreshToken);
+    user.putIfAbsent('expiry_timekkk', () => expiryTime.toString());
+    user.putIfAbsent('expires_in', () => decodedResposnse['data']['expires_in']);
+    user.putIfAbsent('user_id', () => userId);
+    userInfo.setString('user', json.encode(user));
+    debugPrint(userInfo.get('user').toString(), wrapWidth: 1024);
   }
 
   Widget _navigateToRegister(BuildContext context) {

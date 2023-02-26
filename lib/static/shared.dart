@@ -16,7 +16,7 @@ const xxl = 1400.0;
 
 class SharedProperties extends StatelessWidget {
   static const phone_numbers = ['AE', 'SA', 'KE'];
-  static const baseUrl = 'http://192.168.0.198:8000/api/v1/';
+  static const baseUrl = 'https://lidta.com/lidta_laravel_back_office/public/api/v1/';
 
   static var accessToken;
   static var expiryTime;
