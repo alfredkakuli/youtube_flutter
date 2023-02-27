@@ -88,11 +88,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (decodedResponse['status'] == true) {
         setState(() => {_loginLoadingState = true});
-        _showDefultMessage(decodedResponse['message']);
+        // _showDefultMessage(decodedResponse['message']);
 
         _storeUserInfo(decodedResponse);
-
         Navigator.push(context, SlideLeft(page: const MyHomePage()));
+        setState(() => {_loginLoadingState = false});
       } else {
         setState(() => {_errorMessage = decodedResponse['message']['errors']['message'], _loginLoadingState = false});
       }
@@ -122,16 +122,21 @@ class _LoginScreenState extends State<LoginScreen> {
     final accessToken = decodedResposnse['data']['access_token'].toString();
     final refreshToken = decodedResposnse['data']['refresh_token'].toString();
     final userId = decodedResposnse['data']['user']['id'].toString();
-    final expiryTime = DateTime.now().add(Duration(minutes: int.parse(decodedResposnse['data']['expires_in'].toString())));
+    var expiryTime = DateTime.now().add(Duration(seconds: int.parse(decodedResposnse['data']['expires_in'].toString())));
+
+    debugPrint(DateTime.now().toLocal().toString(), wrapWidth: 1024);
+
     final userInfo = await SharedPreferences.getInstance();
     Map<String, dynamic> user = decodedResposnse['data']['user'];
+    user.putIfAbsent('expiry_time', () => expiryTime.toLocal().toIso8601String());
+    user.putIfAbsent('user_id', () => userId);
     user.putIfAbsent('access_token', () => accessToken);
     user.putIfAbsent('refresh_token', () => refreshToken);
-    user.putIfAbsent('expiry_timekkk', () => expiryTime.toString());
-    user.putIfAbsent('expires_in', () => decodedResposnse['data']['expires_in']);
-    user.putIfAbsent('user_id', () => userId);
     userInfo.setString('user', json.encode(user));
-    debugPrint(userInfo.get('user').toString(), wrapWidth: 1024);
+
+    final getUser = await SharedPreferences.getInstance();
+
+    debugPrint(getUser.get('user').toString(), wrapWidth: 1024);
   }
 
   Widget _navigateToRegister(BuildContext context) {

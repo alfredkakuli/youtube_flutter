@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -8,19 +9,49 @@ import 'package:full_screen_app/state/ui/ui_provider.dart';
 import 'package:full_screen_app/theme/color_scheme.dart';
 import 'package:full_screen_app/views/pages/home.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'auth/register.dart';
 
-void main() {
-  runApp(const MyApp());
+void main() async {
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  final userinfo = await SharedPreferences.getInstance();
+  final String? logedInUser = userinfo.getString('user');
+
+  if (logedInUser != null) {
+    final decodedUser = json.decode(logedInUser);
+    debugPrint(decodedUser['expiry_time']);
+    final expiryTime = DateTime.parse(decodedUser['expiry_time']);
+    if (expiryTime.isAfter(DateTime.now())) {
+      runApp(const MyApp(
+        isLogedIn: true,
+      ));
+    } else {
+      runApp(const MyApp(
+        isLogedIn: false,
+      ));
+    }
+  } else {
+    runApp(const MyApp(
+      isLogedIn: false,
+    ));
+  }
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({super.key, @required this.isLogedIn});
+  final isLogedIn;
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
         providers: baseProvider,
         child: Consumer<UiProvider>(builder: (_, baseUiProvider, _2) {
+          var home;
+          if (isLogedIn) {
+            home = const MyHomePage();
+          } else {
+            home = const LoginScreen();
+          }
+
           var statusText = Brightness.light;
           var bgColor = darkModeprimarybg.withOpacity(0.00095);
 
@@ -45,7 +76,7 @@ class MyApp extends StatelessWidget {
             themeMode: baseUiProvider.getThemeMode ? ThemeMode.dark : ThemeMode.light,
             // home: const MyHomePage(),
             // home: const LoginScreen(),
-            home: const RegisterScreen(),
+            home: home,
           );
         }));
   }
