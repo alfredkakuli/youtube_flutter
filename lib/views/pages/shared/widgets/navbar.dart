@@ -1,5 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:full_screen_app/theme/color_scheme.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../state/ui/ui_provider.dart';
 
@@ -96,14 +100,40 @@ Widget navbar(context) => SafeArea(
                   const SizedBox(
                     width: 10.0,
                   ),
-                  InkWell(
-                    onHover: (value) => {},
-                    onTap: () => {},
-                    child: Icon(
-                      Icons.account_circle,
-                      size: 24.0,
-                      color: Theme.of(context).colorScheme.onBackground,
-                    ),
+                  Row(
+                    children: [
+                      Text(uiProvider.getLogedUser != null ? uiProvider.getLogedUser['user_name'].toString() : ""),
+                      smallHorinzontalSpacer(),
+                      InkWell(
+                        onHover: (value) => {},
+                        onTap: () => {},
+                        child: Expanded(
+                          child: Container(
+                            width: 30.0,
+                            height: 30.0,
+                            // height: deviceHeight * 0.025,
+                            decoration: BoxDecoration(
+                              color: const Color.fromRGBO(255, 255, 255, 0.0),
+                              borderRadius: BorderRadius.circular(5.0),
+                            ),
+                            child: Container(
+                              decoration: BoxDecoration(color: Theme.of(context).colorScheme.error, image: DecorationImage(fit: BoxFit.cover, image: NetworkImage(uiProvider.getLogedUser != null ? uiProvider.getLogedUser['profile_image_url'].toString() : "")), shape: BoxShape.circle),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(5.0),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // (
+                        //   child: Icon(
+                        //     Icons.account_circle,
+                        //     size: 24.0,
+                        //     color: Theme.of(context).colorScheme.onBackground,
+                        //   ),
+                        // ),
+                      ),
+                    ],
                   ),
                   const SizedBox(
                     width: 10.0,

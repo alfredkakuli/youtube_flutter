@@ -41,8 +41,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   var _firstNameProperty = "Alfred";
   var _lastNameProperty = "kakuli";
-  var _emailProperty = "alfredlaluli@gmail.com";
-  var _phoneProperty = "+971524506208";
+  var _emailProperty = "me@me.com";
+  var _phoneProperty = "+975555555555";
   var _passwordProperty = "12345678";
 
   String? _errorMessage;
@@ -136,9 +136,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
       final decodedResponse = response.data;
 
-      print(decodedResponse);
-
       if (decodedResponse['exception'] != null) {
+        debugPrint(decodedResponse['exception'].toString());
         setState(() => {_errorMessage = " Server error occured try again later!", _registerLoadingState = false});
         return;
       }
@@ -617,7 +616,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.background.withOpacity(0.030), spreadRadius: 1.0, blurRadius: 1, offset: const Offset(1, 1))],
       ),
       child: PhoneFormField(
-        initialValue: const PhoneNumber(isoCode: IsoCode.AE, nsn: "524506208"),
+        initialValue: const PhoneNumber(isoCode: IsoCode.AE, nsn: "555555555"),
         decoration: const InputDecoration(
           contentPadding: EdgeInsets.symmetric(vertical: 10.0),
           border: OutlineInputBorder(borderSide: BorderSide.none),

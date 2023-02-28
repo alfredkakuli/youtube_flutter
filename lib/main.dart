@@ -19,13 +19,14 @@ void main() async {
 
   if (logedInUser != null) {
     final decodedUser = json.decode(logedInUser);
-    debugPrint(decodedUser['expiry_time']);
+ 
     final expiryTime = DateTime.parse(decodedUser['expiry_time']);
     if (expiryTime.isAfter(DateTime.now())) {
       runApp(const MyApp(
         isLogedIn: true,
       ));
     } else {
+      userinfo.remove('user');
       runApp(const MyApp(
         isLogedIn: false,
       ));
@@ -45,7 +46,8 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
         providers: baseProvider,
         child: Consumer<UiProvider>(builder: (_, baseUiProvider, _2) {
-          var home;
+          baseUiProvider.setLogedUser();
+          StatefulWidget home;
           if (isLogedIn) {
             home = const MyHomePage();
           } else {

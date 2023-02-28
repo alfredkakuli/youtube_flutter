@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:full_screen_app/state/ui/ui_provider.dart';
 import 'package:full_screen_app/views/pages/shared/widgets/navbar.dart';
 import 'package:full_screen_app/views/pages/shared/widgets/sidebar.dart';
 import 'package:full_screen_app/views/pages/user_list.dart';
+import 'package:provider/provider.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
@@ -10,6 +12,16 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  var _isInit = true;
+  @override
+  void didChangeDependencies() {
+    if (_isInit) {
+      Provider.of<UiProvider>(context, listen: false).setLogedUser();
+    }
+    _isInit = false;
+    super.didChangeDependencies();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

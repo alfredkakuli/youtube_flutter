@@ -94,6 +94,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Navigator.push(context, SlideLeft(page: const MyHomePage()));
         setState(() => {_loginLoadingState = false});
       } else {
+        _removeUserInfo();
         setState(() => {_errorMessage = decodedResponse['message']['errors']['message'], _loginLoadingState = false});
       }
     } on DioError catch (e) {
@@ -137,6 +138,11 @@ class _LoginScreenState extends State<LoginScreen> {
     final getUser = await SharedPreferences.getInstance();
 
     debugPrint(getUser.get('user').toString(), wrapWidth: 1024);
+  }
+
+  void _removeUserInfo() async {
+    final userInfo = await SharedPreferences.getInstance();
+    userInfo.remove("user");
   }
 
   Widget _navigateToRegister(BuildContext context) {

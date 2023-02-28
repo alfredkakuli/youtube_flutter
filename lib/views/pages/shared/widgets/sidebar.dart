@@ -43,6 +43,10 @@ class _SideBarState extends State<SideBar> with SingleTickerProviderStateMixin {
 
     sidebarOverlayEntry = OverlayEntry(
         builder: (context) => Consumer<UiProvider>(builder: (_, uiProvider, _2) {
+
+            
+
+
               sidebarAnimation = Tween<double>(begin: 150, end: MediaQuery.of(context).size.width * 0.75).animate(sidebarAnimationController);
               if (uiProvider.getSidebar) {
                 sidebarAnimationController.forward();
