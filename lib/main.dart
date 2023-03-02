@@ -1,5 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:full_screen_app/state/provider_export.dart';
+import 'package:full_screen_app/state/ui/ui_provider.dart';
+import 'package:full_screen_app/theme/color_scheme.dart';
+import 'package:provider/provider.dart';
+import 'views/pages/home.dart';
 
 void main() {
   runApp(const MyApp());
@@ -9,47 +16,33 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
   @override
   Widget build(BuildContext context) {
-    SystemUiOverlayStyle systemUiOverlayStyle = const SystemUiOverlayStyle(statusBarColor: Colors.transparent, statusBarIconBrightness: Brightness.light, systemNavigationBarIconBrightness: Brightness.light, systemNavigationBarColor: Colors.transparent, systemNavigationBarDividerColor: Colors.transparent, systemNavigationBarContrastEnforced: false, systemStatusBarContrastEnforced: false);
-    SystemChrome.setSystemUIOverlayStyle(systemUiOverlayStyle);
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: [SystemUiOverlay.top, SystemUiOverlay.bottom]);
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky, overlays: [SystemUiOverlay.bottom]);
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: const MyHomePage(),
-    );
-  }
-}
+    return MultiProvider(
+        providers: baseProvider,
+        child: Consumer<UiProvider>(builder: (_, baseUiProvider, _2) {
+          var statusText = Brightness.light;
+          var bgColor = darkModeprimarybg.withOpacity(0.00095);
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key});
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
+          if (!baseUiProvider.getThemeMode) {
+            statusText = Brightness.dark;
+            lightModeSecondarybg.withOpacity(0.00095);
+          }
 
+          if (Platform.isAndroid || Platform.isIOS) {
+            SystemUiOverlayStyle systemUiOverlayStyle = SystemUiOverlayStyle(statusBarColor: Colors.transparent, statusBarIconBrightness: statusText, systemNavigationBarIconBrightness: statusText, systemNavigationBarColor: bgColor, systemNavigationBarDividerColor: bgColor, systemNavigationBarContrastEnforced: false, systemStatusBarContrastEnforced: false);
+            SystemChrome.setSystemUIOverlayStyle(systemUiOverlayStyle);
+            SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: [SystemUiOverlay.top, SystemUiOverlay.bottom]);
+            SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky, overlays: [SystemUiOverlay.bottom]);
+            SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+          }
 
-class _MyHomePageState extends State<MyHomePage> {
-  @override
-  Widget build(BuildContext context) {
-
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      body: Container(
-        
-        height: MediaQuery.of(context).size.height,
-        decoration: const BoxDecoration(
-           image: DecorationImage(
-            
-            fit: BoxFit.cover,
-            image: AssetImage('assets/images/bg_dark.png'),
-          ),
-          color: Colors.blue,
-        ),
-      ),
-    );
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            title: 'Flutter Demo',
+            theme: ThemeData(useMaterial3: true, colorScheme: lightColorScheme),
+            darkTheme: ThemeData(useMaterial3: true, colorScheme: darkColorScheme),
+            themeMode: baseUiProvider.getThemeMode ? ThemeMode.dark : ThemeMode.light,
+            home: const MyHomePage(),
+          );
+        }));
   }
 }
