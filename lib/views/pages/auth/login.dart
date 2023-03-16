@@ -4,18 +4,22 @@ import 'package:flutter/material.dart';
 import 'package:flash/flash.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
-import 'package:full_screen_app/auth/register.dart';
+import 'package:full_screen_app/state/auth/auth_provider.dart';
+import 'package:full_screen_app/views/pages/auth/register.dart';
 import 'package:full_screen_app/views/pages/home.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../navigation/router.dart';
-import '../navigation/slide.dart';
-import '../state/ui/ui_provider.dart';
-import '../static/loader.dart';
-import '../static/shared.dart';
-import '../theme/color_scheme.dart';
+import '../../../data/sharedprefrence/shared_preference_helper.dart';
+import '../../../navigation/router.dart';
+import '../../../navigation/slide.dart';
+import '../../../services/singletone.dart';
+import '../../../state/ui/ui_provider.dart';
+import '../../../static/loader.dart';
+import '../../../static/shared.dart';
+import '../../../theme/color_scheme.dart';
+import '../shared/widgets/shared_widgets.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -30,8 +34,8 @@ class _LoginScreenState extends State<LoginScreen> {
   bool isPasswordObsecured = true;
   bool _loginLoadingState = false;
 
-  String? _emailProperty;
-  String? _passwordProperty;
+  String? _emailProperty = "me@me.com";
+  String? _passwordProperty = "111111";
   String? _errorMessage;
 
   var authProvider;
@@ -64,85 +68,22 @@ class _LoginScreenState extends State<LoginScreen> {
   void _login() async {
     try {
       var formDataa = {
-        "password": _passwordProperty,
-        "email": _emailProperty,
+        "password": "111111", //_passwordProperty,
+        "email": "me@me.com", //_emailProperty,
         "use_auth_token": true,
       };
-      setState(() => {_loginLoadingState = true});
-      var response = await Dio().post(
-        '${SharedProperties.baseUrl}login_user',
-        data: formDataa,
-        queryParameters: formDataa,
-        options: Options(
-          followRedirects: false,
-          validateStatus: (status) {
-            return status! < 600;
-          },
-          headers: {HttpHeaders.acceptHeader: "application/json", HttpHeaders.contentTypeHeader: "application/json"},
-        ),
-      );
 
-      final decodedResponse = response.data;
-
-      // debugPrint(decodedResponse['data']['user'].toString(), wrapWidth: 1024);
-
-      if (decodedResponse['status'] == true) {
-        setState(() => {_loginLoadingState = true});
-        // _showDefultMessage(decodedResponse['message']);
-
-        _storeUserInfo(decodedResponse);
-        Navigator.push(context, SlideLeft(page: const MyHomePage()));
-        setState(() => {_loginLoadingState = false});
-      } else {
-        _removeUserInfo();
-        setState(() => {_errorMessage = decodedResponse['message']['errors']['message'], _loginLoadingState = false});
-      }
-    } on DioError catch (e) {
-      if (e.type == DioErrorType.badResponse) {
-        setState(() => {_loginLoadingState = false});
-        return;
-      }
-      if (e.type == DioErrorType.connectionTimeout) {
-        setState(() => {_loginLoadingState = false, _errorMessage = 'check your connection'});
-        return;
-      }
-      if (e.type == DioErrorType.receiveTimeout) {
-        setState(() => {_loginLoadingState = false, _errorMessage = 'unable to connect to the server'});
-        return;
-      }
-
-      if (e.type == DioErrorType.unknown) {
-        setState(() => {_errorMessage = 'An Error Occured Please try again'});
-        return;
-      }
-      return;
+      final singleTone = getIt.get<SharedPreferencesHelper>();
+      await authProvider.login(formDataa).then((value) => uiProvider.setLogedUser(json.decode(singleTone.getAuthData().toString())));
+      Navigator.push(context, SlideLeft(page: const MyHomePage()));
+    } catch (e) {
+      final singleTone = getIt.get<SharedPreferencesHelper>();
+      await uiProvider.setAlert(json.decode(singleTone.getAlertInfo().toString()));
     }
-  }
-
-  void _storeUserInfo(decodedResposnse) async {
-    final accessToken = decodedResposnse['data']['access_token'].toString();
-    final refreshToken = decodedResposnse['data']['refresh_token'].toString();
-    final userId = decodedResposnse['data']['user']['id'].toString();
-    var expiryTime = DateTime.now().add(Duration(seconds: int.parse(decodedResposnse['data']['expires_in'].toString())));
-
-    debugPrint(DateTime.now().toLocal().toString(), wrapWidth: 1024);
-
-    final userInfo = await SharedPreferences.getInstance();
-    Map<String, dynamic> user = decodedResposnse['data']['user'];
-    user.putIfAbsent('expiry_time', () => expiryTime.toLocal().toIso8601String());
-    user.putIfAbsent('user_id', () => userId);
-    user.putIfAbsent('access_token', () => accessToken);
-    user.putIfAbsent('refresh_token', () => refreshToken);
-    userInfo.setString('user', json.encode(user));
-
-    final getUser = await SharedPreferences.getInstance();
-
-    debugPrint(getUser.get('user').toString(), wrapWidth: 1024);
-  }
-
-  void _removeUserInfo() async {
-    final userInfo = await SharedPreferences.getInstance();
-    userInfo.remove("user");
+    final singleTone = getIt.get<SharedPreferencesHelper>();
+    setState(() {
+      _loginLoadingState = false;
+    });
   }
 
   Widget _navigateToRegister(BuildContext context) {
@@ -166,6 +107,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final deviceHeight = MediaQuery.of(context).size.height;
     final deviceWidth = MediaQuery.of(context).size.width;
     uiProvider = Provider.of<UiProvider>(context, listen: true);
+    authProvider = Provider.of<AuthProvider>(context, listen: true);
     return Scaffold(
       extendBodyBehindAppBar: true,
       body: CustomScrollView(
@@ -180,6 +122,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Container(width: double.infinity, decoration: BoxDecoration(image: DecorationImage(fit: BoxFit.cover, image: uiProvider.getThemeMode ? const AssetImage('assets/images/bg_dark.png') : const AssetImage('assets/images/bg_light.png')), color: Theme.of(context).colorScheme.background)),
               ),
               Consumer<UiProvider>(builder: (_, uiprovider, _2) {
+                final globalAlert = uiprovider.getgetAlert();
                 return Positioned(
                     child: Container(
                   padding: EdgeInsets.all(deviceHeight * 0.01),
@@ -229,7 +172,44 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ],
                       ),
-                      if (_errorMessage != null) Container(padding: const EdgeInsets.all(5.0), decoration: BoxDecoration(color: Theme.of(context).colorScheme.errorContainer, borderRadius: const BorderRadius.all(Radius.circular(5.0))), child: Text(_errorMessage.toString(), style: GoogleFonts.abel(color: Theme.of(context).colorScheme.error, fontSize: 16.0, decoration: TextDecoration.none))),
+                      smallSpacer(),
+                      if (globalAlert != null)
+                        Column(
+                          children: [
+                            SizedBox(
+                              width: deviceWidth,
+                              child: alertContainer(
+                                globalAlert['text'],
+                                globalAlert['type'] == "error" ? Theme.of(context).colorScheme.errorContainer : Theme.of(context).colorScheme.primaryContainer,
+                                globalAlert['type'] == "error" ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Container(
+                                  alignment: Alignment.topRight,
+                                  margin: const EdgeInsets.only(top: 1.0),
+                                  height: 30.0,
+                                  width: 30.0,
+                                  decoration: BoxDecoration(color: globalAlert['type'] == "error" ? Theme.of(context).colorScheme.errorContainer : Theme.of(context).colorScheme.primaryContainer, borderRadius: const BorderRadius.all(Radius.circular(5.0))),
+                                  child: Center(
+                                    child: InkWell(
+                                      onTap: () {
+                                        uiProvider.setAlert(null);
+                                      },
+                                      child: Icon(
+                                        TablerIcons.x,
+                                        size: 30,
+                                        color: globalAlert['type'] == "error" ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.primary,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            )
+                          ],
+                        ),
                       Form(
                         key: _loginFormKey,
                         child: Column(
@@ -296,6 +276,7 @@ class _LoginScreenState extends State<LoginScreen> {
         boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.background.withOpacity(0.030), spreadRadius: 1.0, blurRadius: 1, offset: const Offset(1, 1))],
       ),
       child: TextFormField(
+        initialValue: _emailProperty,
         onSaved: (val) => _emailProperty = val,
         validator: SharedProperties.validEmail,
         enableInteractiveSelection: false,
@@ -321,6 +302,7 @@ class _LoginScreenState extends State<LoginScreen> {
         boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.background.withOpacity(0.030), spreadRadius: 1.0, blurRadius: 1, offset: const Offset(1, 1))],
       ),
       child: TextFormField(
+          initialValue: _passwordProperty,
           onSaved: (val) => _passwordProperty = val,
           validator: SharedProperties.validPassword,
           obscureText: isPasswordObsecured,

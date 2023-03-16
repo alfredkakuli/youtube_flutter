@@ -1,10 +1,6 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:full_screen_app/theme/color_scheme.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
 import '../../../../state/ui/ui_provider.dart';
 
 Widget navbar(context) => SafeArea(

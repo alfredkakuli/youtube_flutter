@@ -16,7 +16,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void didChangeDependencies() {
     if (_isInit) {
-      Provider.of<UiProvider>(context, listen: false).setLogedUser();
+      Provider.of<UiProvider>(context, listen: true).getLogedUser;
     }
     _isInit = false;
     super.didChangeDependencies();

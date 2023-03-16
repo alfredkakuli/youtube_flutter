@@ -4,21 +4,28 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flash/flash.dart';
 import 'package:flutter/services.dart';
-import 'package:full_screen_app/auth/login.dart';
+import 'package:full_screen_app/data/validation/validator.dart';
+import 'package:full_screen_app/views/pages/auth/login.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../navigation/router.dart';
-import '../navigation/slide.dart';
-import '../state/ui/ui_provider.dart';
-import '../static/loader.dart';
-import '../static/shared.dart';
-import '../theme/color_scheme.dart';
-import '../views/pages/shared/widgets/custom_app_bar.dart';
+import '../../../data/sharedprefrence/shared_preference_helper.dart';
+import '../../../navigation/router.dart';
+import '../../../navigation/slide.dart';
+import '../../../services/singletone.dart';
+import '../../../state/auth/auth_provider.dart';
+import '../../../state/ui/ui_provider.dart';
+import '../../../static/loader.dart';
+import '../../../static/shared.dart';
+import '../../../theme/color_scheme.dart';
+import '../shared/styles/styles.dart';
+import '../shared/widgets/custom_app_bar.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:phone_form_field/phone_form_field.dart';
+
+import '../shared/widgets/shared_widgets.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -29,29 +36,26 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final GlobalKey<FormState> _registerFormKey = GlobalKey<FormState>();
-
   bool _toggleObsecureText = true;
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
-
-  var authProvider;
-
   bool isPasswordObsecured = true;
   var _registerLoadingState = false;
-
   var _firstNameProperty = "Alfred";
   var _lastNameProperty = "kakuli";
   var _emailProperty = "me@me.com";
   var _phoneProperty = "+975555555555";
   var _passwordProperty = "12345678";
-
-  String? _errorMessage;
-
-  var uiProvider;
-
   File? _profileImageFile;
   String? _profileImagePath;
 
+
+// high level fields 
+  String? _errorMessage;
+  var authProvider;
+  var uiProvider;
+
+  // Methods
   _pickGalleryProfileImage() async {
     FilePickerResult? coverImage = await FilePicker.platform.pickFiles();
     if (coverImage != null) {
@@ -91,7 +95,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
   }
 
-  // Methods
+
 
   void _submitRegisterForm() {
     setState(() {
@@ -108,8 +112,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   void _userRegister(imagePath) async {
+    uiProvider.setAlert(null);
     try {
-      var formDataa = FormData.fromMap({
+      var formDataa = {
         "first_name": _firstNameProperty,
         "name": _firstNameProperty + _lastNameProperty,
         "last_name": _lastNameProperty,
@@ -119,75 +124,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
         "password_confirmation": _confirmPasswordController.text,
         "phone": _phoneProperty,
         "profile_image_url": _profileImageFile != null ? await MultipartFile.fromFile(imagePath.path, filename: imagePath.path.toString()) : 'test.png',
-      });
-      var response = await Dio().post(
-        '${SharedProperties.baseUrl}register_user',
-        data: formDataa,
-        options: Options(
-          followRedirects: false,
-          validateStatus: (status) {
-            return status! < 600;
-          },
-          headers: {
-            HttpHeaders.acceptHeader: "json/application/json",
-            HttpHeaders.contentTypeHeader: "application/x-www-form-urlencoded",
-          },
-        ),
-      );
-      final decodedResponse = response.data;
-
-      if (decodedResponse['exception'] != null) {
-        debugPrint(decodedResponse['exception'].toString());
-        setState(() => {_errorMessage = " Server error occured try again later!", _registerLoadingState = false});
-        return;
-      }
-
-      if (decodedResponse['status'] == true) {
-        setState(() => {_registerLoadingState = false});
-        _showDefultMessage('Registered successfull');
-
+      };
+      await authProvider.register(formDataa);
+      bool proceed = authProvider.getProceed;
+      if (proceed) {
         Navigator.push(context, SlideLeft(page: const LoginScreen()));
-        // navigator(context, '/login_page');
-        _storeUserInfo(decodedResponse);
-      } else {
-        setState(() => {_registerLoadingState = false, _errorMessage = decodedResponse['message']['errors'][0].toString()});
       }
-    } on DioError catch (e) {
-      if (e.type == DioErrorType.badResponse) {
-        setState(() => {_registerLoadingState = false});
-        return;
-      }
-      if (e.type == DioErrorType.connectionTimeout) {
-        setState(() => {_registerLoadingState = false, _errorMessage = "Connection Timeout"});
-        return;
-      }
-
-      if (e.type == DioErrorType.receiveTimeout) {
-        setState(() => {_registerLoadingState = false, _errorMessage = "Server Timeout"});
-        return;
-      }
-
-      if (e.type == DioErrorType.unknown) {
-        setState(() => {_registerLoadingState = false, _errorMessage = "An Error Occured Try Again"});
-        return;
-      }
-      setState(() => {_registerLoadingState = false});
+    } catch (e) {
+      _registerLoadingState = false;
+      final singleTone = getIt.get<SharedPreferencesHelper>();
+      uiProvider.setAlert(json.decode(singleTone.getAlertInfo().toString()));
       return;
     }
   }
 
-  void _storeUserInfo(decodedResposnse) async {
-    final accessToken = decodedResposnse['data']['original']['access_token'].toString();
-    final userId = decodedResposnse['data']['original']['user']['id'].toString();
-    final expiryTime = DateTime.now().add(Duration(minutes: int.parse(decodedResposnse['access_token_expires_in'].toString())));
-    final userInfo = await SharedPreferences.getInstance();
-
-    Map<String, dynamic> user = decodedResposnse['data']['original']['user'];
-    user.putIfAbsent('access_token', () => accessToken);
-    user.putIfAbsent('expiry_time', () => expiryTime);
-    user.putIfAbsent('expires_in', () => decodedResposnse['access_token_expires_in']);
-    user.putIfAbsent('customer_id', () => userId);
-    userInfo.setString('user', json.encode(user));
+  void resetAlertState() {
+    uiProvider.setAlert(null);
   }
 
   @override
@@ -206,6 +158,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final deviceHeight = MediaQuery.of(context).size.height;
     final deviceWidth = MediaQuery.of(context).size.width;
     uiProvider = Provider.of<UiProvider>(context, listen: true);
+    authProvider = Provider.of<AuthProvider>(context, listen: true);
     return Scaffold(
       extendBodyBehindAppBar: true,
       body: CustomScrollView(
@@ -226,6 +179,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
               ),
               Consumer<UiProvider>(builder: (_, uiprovider, _2) {
+                final globalAlert = uiprovider.getgetAlert();
                 return Positioned(
                     child: Container(
                   padding: EdgeInsets.all(deviceHeight * 0.01),
@@ -292,20 +246,49 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                         ],
                       ),
-                      if (_errorMessage != null)
-                        Container(
-                          padding: const EdgeInsets.all(5.0),
-                          decoration: BoxDecoration(color: Theme.of(context).colorScheme.errorContainer, borderRadius: const BorderRadius.all(Radius.circular(5.0))),
-                          child: Text(
-                            _errorMessage.toString(),
-                            style: GoogleFonts.abel(color: Theme.of(context).colorScheme.error, fontSize: 16.0, decoration: TextDecoration.none),
-                          ),
+                      smallSpacer(),
+                      if (globalAlert != null)
+                        Column(
+                          children: [
+                            SizedBox(
+                              width: deviceWidth,
+                              child: alertContainer(
+                                globalAlert['text'],
+                                globalAlert['type'] == "error" ? Theme.of(context).colorScheme.errorContainer : Theme.of(context).colorScheme.primaryContainer,
+                                globalAlert['type'] == "error" ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Container(
+                                  alignment: Alignment.topRight,
+                                  margin: const EdgeInsets.only(top: 1.0),
+                                  height: 30.0,
+                                  width: 30.0,
+                                  decoration: BoxDecoration(color: globalAlert['type'] == "error" ? Theme.of(context).colorScheme.errorContainer : Theme.of(context).colorScheme.primaryContainer, borderRadius: const BorderRadius.all(Radius.circular(5.0))),
+                                  child: Center(
+                                    child: InkWell(
+                                      onTap: () {
+                                        uiProvider.setAlert(null);
+                                      },
+                                      child: Icon(
+                                        TablerIcons.x,
+                                        size: 30,
+                                        color: globalAlert['type'] == "error" ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.primary,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            )
+                          ],
                         ),
                       Form(
                         key: _registerFormKey,
                         child: Column(
                           children: [
-                            Container(alignment: Alignment.centerLeft, padding: const EdgeInsets.symmetric(vertical: 20.0), child: const Text('REGISTER', style: TextStyle(fontSize: 24.0, fontWeight: FontWeight.bold, letterSpacing: 10.0))),
+                            Container(alignment: Alignment.centerLeft, padding: const EdgeInsets.symmetric(vertical: 5.0), child: const Text('REGISTER', style: TextStyle(fontSize: 24.0, fontWeight: FontWeight.bold, letterSpacing: 10.0))),
                             smallSpacer(),
                             Row(
                               children: [
@@ -327,45 +310,43 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                             bottom: 0.0,
                                             child: Container(
                                               padding: const EdgeInsets.all(5.0),
-                                              child: Expanded(
-                                                child: Row(
-                                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                                  mainAxisAlignment: MainAxisAlignment.center,
-                                                  children: [
-                                                    InkWell(
-                                                      onHover: (value) {},
-                                                      onTap: () => {_pickCameraProfileImage()},
-                                                      child: Container(
-                                                        margin: const EdgeInsets.symmetric(horizontal: 5.0),
-                                                        padding: const EdgeInsets.all(5.0),
-                                                        decoration: BoxDecoration(color: Theme.of(context).colorScheme.background, shape: BoxShape.circle),
-                                                        child: Icon(TablerIcons.camera, size: 20.0, color: Theme.of(context).colorScheme.primary),
-                                                      ),
+                                              child: Row(
+                                                crossAxisAlignment: CrossAxisAlignment.center,
+                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                children: [
+                                                  InkWell(
+                                                    onHover: (value) {},
+                                                    onTap: () => {_pickCameraProfileImage()},
+                                                    child: Container(
+                                                      margin: const EdgeInsets.symmetric(horizontal: 5.0),
+                                                      padding: const EdgeInsets.all(5.0),
+                                                      decoration: BoxDecoration(color: Theme.of(context).colorScheme.background, shape: BoxShape.circle),
+                                                      child: Icon(TablerIcons.camera, size: 20.0, color: Theme.of(context).colorScheme.primary),
                                                     ),
-                                                    GestureDetector(
-                                                      onTap: () => {
-                                                        _pickGalleryProfileImage(),
-                                                      },
-                                                      child: Container(
-                                                        padding: const EdgeInsets.all(5.0),
-                                                        margin: const EdgeInsets.only(top: 20.0),
-                                                        alignment: Alignment.center,
-                                                        decoration: BoxDecoration(color: Theme.of(context).colorScheme.background, shape: BoxShape.circle),
-                                                        child: Icon(TablerIcons.picture_in_picture, size: 20.0, color: Theme.of(context).colorScheme.primary),
-                                                      ),
+                                                  ),
+                                                  GestureDetector(
+                                                    onTap: () => {
+                                                      _pickGalleryProfileImage(),
+                                                    },
+                                                    child: Container(
+                                                      padding: const EdgeInsets.all(5.0),
+                                                      margin: const EdgeInsets.only(top: 20.0),
+                                                      alignment: Alignment.center,
+                                                      decoration: BoxDecoration(color: Theme.of(context).colorScheme.background, shape: BoxShape.circle),
+                                                      child: Icon(TablerIcons.picture_in_picture, size: 20.0, color: Theme.of(context).colorScheme.primary),
                                                     ),
-                                                    InkWell(
-                                                      onHover: (value) {},
-                                                      onTap: () => {_removeProfileImage()},
-                                                      child: Container(
-                                                        margin: const EdgeInsets.symmetric(horizontal: 5.0),
-                                                        padding: const EdgeInsets.all(5.0),
-                                                        decoration: BoxDecoration(color: Theme.of(context).colorScheme.background, shape: BoxShape.circle),
-                                                        child: Icon(TablerIcons.x, size: 20.0, color: Theme.of(context).colorScheme.error),
-                                                      ),
+                                                  ),
+                                                  InkWell(
+                                                    onHover: (value) {},
+                                                    onTap: () => {_removeProfileImage()},
+                                                    child: Container(
+                                                      margin: const EdgeInsets.symmetric(horizontal: 5.0),
+                                                      padding: const EdgeInsets.all(5.0),
+                                                      decoration: BoxDecoration(color: Theme.of(context).colorScheme.background, shape: BoxShape.circle),
+                                                      child: Icon(TablerIcons.x, size: 20.0, color: Theme.of(context).colorScheme.error),
                                                     ),
-                                                  ],
-                                                ),
+                                                  ),
+                                                ],
                                               ),
                                             ),
                                           )
@@ -426,6 +407,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Widget _navigateToLogin(BuildContext context) {
+    // uiProvider.setAlert(null);
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -434,7 +416,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
         smallHorinzontalSpacer(),
         InkWell(
           onHover: (value) => {},
-          onTap: () => {Navigator.push(context, SlideLeft(page: const LoginScreen()))},
+          onTap: () => {
+            // uiProvider.setAlert(null),
+            Navigator.push(context, SlideLeft(page: const LoginScreen())),
+          },
           child: Text("Login", style: TextStyle(fontSize: 16.0, color: Theme.of(context).colorScheme.secondary)),
         ),
       ],
@@ -479,7 +464,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       child: TextFormField(
         onSaved: (val) => _firstNameProperty = val!,
         initialValue: _firstNameProperty,
-        validator: SharedProperties.validUserName,
+        validator: FormValidator.generalName,
         enableInteractiveSelection: false,
         inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r"\s\b|\b\s"))],
         style: GoogleFonts.abel(fontSize: 18.0, color: Theme.of(context).colorScheme.onBackground),
@@ -510,7 +495,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       child: TextFormField(
         onSaved: (val) => _lastNameProperty = val!,
         initialValue: _lastNameProperty,
-        validator: SharedProperties.validUserName,
+        validator: FormValidator.generalName,
         enableInteractiveSelection: false,
         inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r"\s\b|\b\s"))],
         style: GoogleFonts.abel(fontSize: 18.0, color: Theme.of(context).colorScheme.onBackground),
@@ -547,34 +532,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
         boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.background.withOpacity(0.030), spreadRadius: 1.0, blurRadius: 1, offset: const Offset(1, 1))],
       ),
       child: TextFormField(
-        onSaved: (val) => _emailProperty = val!,
-        initialValue: _emailProperty,
-        validator: SharedProperties.validEmail,
-        enableInteractiveSelection: false,
-        inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r"\s\b|\b\s"))],
-        style: GoogleFonts.abel(fontSize: 18.0, color: Theme.of(context).colorScheme.onBackground),
-        decoration: InputDecoration(
-          contentPadding: const EdgeInsets.all(15.0),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide(color: Theme.of(context).colorScheme.background.withOpacity(0.10)),
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide(color: Theme.of(context).colorScheme.background.withOpacity(0.10)),
-          ),
-          labelStyle: GoogleFonts.abel(color: Theme.of(context).colorScheme.onBackground.withOpacity(0.90)),
-          labelText: 'E-mail',
-          suffixIcon: InkWell(
-            onTap: () {},
-            onHover: (value) {},
-            child: Icon(TablerIcons.mail, size: 20.0, color: Theme.of(context).colorScheme.onBackground.withOpacity(0.10)),
-          ),
-        ),
-      ),
+          onSaved: (val) => _emailProperty = val!,
+          initialValue: _emailProperty,
+          validator: FormValidator.validEmail,
+          enableInteractiveSelection: false,
+          inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r"\s\b|\b\s"))],
+          style: GoogleFonts.abel(fontSize: 18.0, color: Theme.of(context).colorScheme.onBackground),
+          decoration: inputDecoration(Theme.of(context).colorScheme.background.withOpacity(0.10), Theme.of(context).colorScheme.onBackground.withOpacity(0.90), Theme.of(context).colorScheme.onBackground.withOpacity(0.10), 'Email', TablerIcons.mail, {})),
     );
   }
 
@@ -658,7 +622,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       child: TextFormField(
           controller: _passwordController,
           // initialValue: _passwordProperty,
-          validator: SharedProperties.validPassword,
+          validator: FormValidator.validPassword,
           obscureText: isPasswordObsecured,
           onSaved: (val) => _passwordProperty = val.toString(),
           style: GoogleFonts.abel(fontSize: 18.0, color: Theme.of(context).colorScheme.onBackground),

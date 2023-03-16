@@ -1,4 +1,3 @@
-import 'dart:ffi';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -7,14 +6,14 @@ class LoadingAnimation extends StatefulWidget {
   const LoadingAnimation({Key? key}) : super(key: key);
 
   @override
-  _LoadingAnimationState createState() => _LoadingAnimationState();
+  LoadingAnimationState createState() => LoadingAnimationState();
 }
 
-class _LoadingAnimationState extends State<LoadingAnimation> with TickerProviderStateMixin {
+class LoadingAnimationState extends State<LoadingAnimation> with TickerProviderStateMixin {
   late AnimationController _controller;
-  late Animation<double> animation_rotation;
-  late Animation animation_radius_in;
-  late Animation animation_radius_out;
+  late Animation<double> animationRotation;
+  late Animation animationRadiusIn;
+  late Animation animationRadiusOut;
   var radius = 15.0;
   var radius2 = 5.0;
 
@@ -22,7 +21,7 @@ class _LoadingAnimationState extends State<LoadingAnimation> with TickerProvider
   void initState() {
     super.initState();
     _controller = AnimationController(vsync: this, duration: const Duration(seconds: 2));
-    animation_rotation = Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(parent: _controller, curve: Interval(0.0, 1.0, curve: Curves.linear)));
+    animationRotation = Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(parent: _controller, curve: const Interval(0.0, 1.0, curve: Curves.linear)));
     _controller.addListener(() {
       // _controller.repeat();
       setState(() {
@@ -33,19 +32,19 @@ class _LoadingAnimationState extends State<LoadingAnimation> with TickerProvider
 
   @override
   void dispose() {
-    super.dispose();
     _controller.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     _controller.forward();
-    return Container(
+    return SizedBox(
       height: 50.0,
       width: 50.0,
       child: Center(
         child: RotationTransition(
-          turns: animation_rotation,
+          turns: animationRotation,
           child: Stack(
             children: [
               Transform.translate(
@@ -129,10 +128,10 @@ class Dot extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Container(
-        width: this.radius,
-        height: this.radius,
+        width: radius,
+        height: radius,
         decoration: BoxDecoration(
-          color: this.color,
+          color: color,
           shape: BoxShape.circle,
         ),
       ),

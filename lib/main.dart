@@ -3,30 +3,32 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:full_screen_app/auth/login.dart';
+import 'package:full_screen_app/data/sharedprefrence/shared_preference_helper.dart';
+import 'package:full_screen_app/services/singletone.dart';
+import 'package:full_screen_app/views/pages/auth/login.dart';
 import 'package:full_screen_app/state/provider_export.dart';
 import 'package:full_screen_app/state/ui/ui_provider.dart';
 import 'package:full_screen_app/theme/color_scheme.dart';
 import 'package:full_screen_app/views/pages/home.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'auth/register.dart';
 
 void main() async {
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
-  final userinfo = await SharedPreferences.getInstance();
-  final String? logedInUser = userinfo.getString('user');
 
-  if (logedInUser != null) {
-    final decodedUser = json.decode(logedInUser);
- 
+  await setup();
+  final singleTone =  getIt.get<SharedPreferencesHelper>();
+  singleTone.removeUserInfo();
+  if (singleTone.getAuthData() != null) {
+    final decodedUser = json.decode(singleTone.getAuthData().toString());
+
     final expiryTime = DateTime.parse(decodedUser['expiry_time']);
+    
     if (expiryTime.isAfter(DateTime.now())) {
-      runApp(const MyApp(
+       runApp(const MyApp(
         isLogedIn: true,
       ));
     } else {
-      userinfo.remove('user');
+      singleTone.removeUserInfo();
       runApp(const MyApp(
         isLogedIn: false,
       ));
@@ -46,9 +48,10 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
         providers: baseProvider,
         child: Consumer<UiProvider>(builder: (_, baseUiProvider, _2) {
-          baseUiProvider.setLogedUser();
+          final singleTone = getIt.get<SharedPreferencesHelper>();
           StatefulWidget home;
           if (isLogedIn) {
+            baseUiProvider.setLogedUser(json.decode(singleTone.getAuthData().toString()));
             home = const MyHomePage();
           } else {
             home = const LoginScreen();

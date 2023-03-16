@@ -53,14 +53,13 @@ class SharedProperties extends StatelessWidget {
     }
   }
 
-  static final validEmail = ValidationBuilder().email('a valid email').minLength(5).maxLength(60, 'at most 60 chars').build();
+  static final validEmail = ValidationBuilder().email('Please Provide a Valid Email').minLength(5).maxLength(60, 'at most 60 chars').build();
   static final validPassword = ValidationBuilder().required('Password is Required').minLength(6, 'at least 6 chars').maxLength(100, 'at most 100 chars').build();
-  static final validVerifyToken = ValidationBuilder().required('Token Number is Required').minLength(6, 'at least 6 chars').maxLength(100, 'at most 100 chars').build();
-  static final validUserName = ValidationBuilder().required('A Valid Username').minLength(3, 'min 3 Chars').build();
   static final validPhoneNumber = ValidationBuilder().required('Required').maxLength(9, 'Invalid Phone Number').build();
   static final generalName = ValidationBuilder().required().build();
+  static final validVerifyToken = ValidationBuilder().required('Token Number is Required').minLength(6, 'at least 6 chars').maxLength(100, 'at most 100 chars').build();
+  static final validUserName = ValidationBuilder().required('A Valid Username').minLength(3, 'min 3 Chars').build();
   static final validDate = ValidationBuilder().required('D.O.B Required').build();
-
   static final requiredFiledValidation = ValidationBuilder().required('Required').build();
 
   @override
